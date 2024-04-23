@@ -5,28 +5,28 @@ const axios = require('axios');
 var dotenv = require('dotenv');
 dotenv.config({ path: "../.env" });
 
-const sgMail = require('@sendgrid/mail');
+//const sgMail = require('@sendgrid/mail');
 const collabSchema = require('../models/collabSchema');
-sgMail.setApiKey(process.env.TWILIO_SENDGRID_API_KEY)
+//sgMail.setApiKey(process.env.TWILIO_SENDGRID_API_KEY)
 
 router.get('/', async (req, res) => {
     if (!req.user) {
-        res.render('ide', { title: "VITdost - Collaborative IDE" });
+        res.render('ide', { title: "CodeConnect-IDE" });
     }
     else {
         const rooms = await Code.find({ createdBy: req.user._id });
         const collabrooms = await Collab.find({userid : req.user._id});
         if (rooms.length > 0 && collabrooms.length > 0) {
-            res.render('ide', { title: "VITdost - Collaborative IDE", rooms: rooms, collabroom : collabrooms});
+            res.render('ide', { title: "CodeConnect-IDE", rooms: rooms, collabroom : collabrooms});
         }
         else if (rooms.length > 0) {
-            res.render('ide', { title: "VITdost - Collaborative IDE", rooms: rooms});
+            res.render('ide', { title: "CodeConnect-IDE", rooms: rooms});
         }
         else if (collabrooms.length > 0) {
-            res.render('ide', { title: "VITdost - Collaborative IDE", collabroom : collabrooms});
+            res.render('ide', { title: "CodeConnect-IDE", collabroom : collabrooms});
         }
         else {
-            res.render('ide', { title: "VITdost - Collaborative IDE" });
+            res.render('ide', { title: "CodeConnect-IDE" });
         }
     }
 })
@@ -51,6 +51,36 @@ router.post('/createTask', async (req, res) => {
     }
 });
 
+router.post('/deleteTask', async (req, res) => {
+    res.set('Cache-Control', 'no-cache');
+    try {
+        const workspaceId = req.body.workspace;
+        //const userId = req.user._id; // Assuming req.user contains the logged-in user's ID
+
+        // Check if the logged-in user is the owner of the workspace
+        const collab = await Code.findOne({ name: workspaceId });
+
+        if (!collab) {
+            // If the logged-in user is not the owner of the workspace, send an error response
+            return res.status(403).send('Workspace does not exists!');
+        }
+
+        // Delete the workspace
+        const deletedWorkspace = await Code.findOneAndDelete({ name: workspaceId });
+
+        if (deletedWorkspace) {
+            res.send('Workspace deleted successfully');
+        } else {
+            res.send('Workspace not found');
+        }
+        //res.redirect('/');
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+
 router.route('/code/:id')
     .get(async (req, res) => {
         if (!req.user) {
@@ -62,7 +92,7 @@ router.route('/code/:id')
                 if (data) {
                     res.render('editor', {
                         content: data.content,
-                        title: 'VITdost',
+                        title: 'CodeConnect',
                         input: data.lastInput,
                         output: data.lastOutput,
                         timeused: data.lastTimeUsed,
@@ -87,7 +117,8 @@ router.route('/code/:id')
             var code = req.body.codes;
             var inp = req.body.input;
             var lang = req.body.langs;
-
+            if(lang=="CPP")
+                lang="CPP14";
             var runCode = {};
             runCode.time_limit = 5;
             runCode.memory_limit = 323244;
@@ -100,7 +131,7 @@ router.route('/code/:id')
             const res = await axios.post('https://api.hackerearth.com/v4/partner/code-evaluation/submissions/', runCode, {
                 headers: {
                     'content-type': 'application/json',
-                    'client-secret': process.env.HACKEREARTH_API_KEY
+                    'client-secret': '3491da009ada6eaba1ea76cd4c8eca2323c23fd2'
                 }
             })
                 .then(async (response) => {
@@ -109,7 +140,7 @@ router.route('/code/:id')
                     while (k != 'REQUEST_COMPLETED' && k != 'REQUEST_FAILED') {
                         await axios.get(urlOfCode, {
                             headers: {
-                                'client-secret': process.env.HACKEREARTH_API_KEY
+                                'client-secret': '3491da009ada6eaba1ea76cd4c8eca2323c23fd2'
                             }
                         })
                             .then(response => {
@@ -167,49 +198,123 @@ router.route('/code/:id')
                     }
 
                 })
-                .catch(err =>
-                    console.log(resp.data)
-                );
+                //.catch(err =>
+                    //console.log(resp.data)
+                //);
         }
     });
 
+    //const axios = require('axios');
 
-router.route('/mail')
-    .post(async (req, res) => {
-        const msg = {
-            to: req.body.friends.split(", "),
-            from: 'help.vitdost@gmail.com',
-            subject: 'VITdost IDE Collaboration',
-            html: `<h1>Hello, User!</h1>
-          <h4>You have been invited to VITdost IDE for collaborative coding with your friends. Kindly join using the link given below. </h4>
-          <h2>https://vitdost.herokuapp.com/ide/code/` + req.body.roomId1 + `</h2>
-          <h4>Thank You</h4>
-          <h4>VITdost Team</h4>
-          `
+   /* router.route('/code/:id')
+      .get(async (req, res) => {
+        if (!req.user) {
+          res.redirect('/');
+        } else {
+          if (req.params.id) {
+            const data = await Code.findOne({ _id: mongoose.Types.ObjectId(req.params.id) });
+            if (data) {
+              res.render('editor', {
+                content: data.content,
+                title: 'CodeConnect',
+                input: data.lastInput,
+                output: data.lastOutput,
+                timeused: data.lastTimeUsed,
+                memused: data.lastMemUsed,
+                roomId: data.id
+              });
+            } else {
+              res.redirect('/error');
+            }
+          } else {
+            res.redirect('/error');
+          }
         }
-        sgMail
-            .send(msg)
-            .then(() => {
-                console.log('Email sent');
-                res.redirect('/ide/code/' + req.body.roomId1);
-            })
-            .catch((error) => {
-                res.redirect('/error');
-            })
-        
-        var temp = req.body.friends.split(",");
-        for(let user of temp) {
-            var u = await User.findOne({email : user.trim()});
-            var w = await Code.findOne({_id : mongoose.Types.ObjectId(req.body.roomId1)});
-            var check = await Collab.findOne({workspaceid: mongoose.Types.ObjectId(req.body.roomId1), userid: u._id});
-            if(check)
-                continue;
-            var newCollab = new Collab({
-                workspaceid : mongoose.Types.ObjectId(req.body.roomId1),
-                workspace : w.name,
-                userid : u._id
-            });
-            await newCollab.save();
+      })
+      .post(async (req, ress) => {
+        if (!req.user) {
+          ress.redirect('/');
+        } else {
+          var code = req.body.codes;
+          var inp = req.body.input;
+          var lang = req.body.langs;
+          lang=lang.toLowerCase()
+    
+          var runCode = {
+            language: lang,
+            version: 'latest',
+            code: code,
+            input: inp
+          };
+    
+          var resp;
+          var flag = 0;
+    
+          const options = {
+            method: 'POST',
+            url: 'https://online-code-compiler.p.rapidapi.com/v1/',
+            headers: {
+              'content-type': 'application/json',
+              'X-RapidAPI-Key': 'eb9ca38ce9msh66f5595af4f90d6p103ddejsn4e1b6b07383e',
+              'X-RapidAPI-Host': 'online-code-compiler.p.rapidapi.com'
+            },
+            data: runCode
+          };
+    
+          try {
+            const response = await axios.request(options);
+            const taskId = response.data.taskId;
+    
+            while (true) {
+              const taskOptions = {
+                method: 'GET',
+                url: `https://online-code-compiler.p.rapidapi.com/v1/languages/`,
+                headers: {
+                  'X-RapidAPI-Key': 'eb9ca38ce9msh66f5595af4f90d6p103ddejsn4e1b6b07383e',
+                  'X-RapidAPI-Host': 'online-code-compiler.p.rapidapi.com'
+                }
+              };
+    
+              const taskResponse = await axios.request(taskOptions);
+              const taskStatus = taskResponse.data.status;
+    
+              if (taskStatus === 'completed') {
+                resp = taskResponse;
+                break;
+              }
+    
+              if (taskStatus === 'failed') {
+                flag = 1;
+                break;
+              }
+    
+              // Add any additional logic or checks here
+    
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+    
+            if (flag === 0) {
+              const data = await Code.findOne({ _id: mongoose.Types.ObjectId(req.params.id) });
+              data.lastInput = inp;
+              data.lastOutput = resp.data.output;
+              data.lastTimeUsed = resp.data.time;
+              data.lastMemUsed = resp.data.memory;
+              await data.save();
+              ress.redirect('/ide/code/' + req.params.id);
+            } else {
+              const data = await Code.findOne({ _id: mongoose.Types.ObjectId(req.params.id) });
+              data.lastInput = inp;
+              data.lastOutput = 'Failed';
+              data.lastTimeUsed = 0;
+              data.lastMemUsed = 0;
+              await data.save();
+              ress.redirect('/ide/code/' + req.params.id);
+            }
+          } catch (error) {
+            console.error(error);
+            ress.redirect('/error');
+          }
         }
-    });
+      });*/
+    
 module.exports = router;

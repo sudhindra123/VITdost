@@ -3,7 +3,7 @@ var router = express.Router();
 
 
 router.get('/', async (req, res) => {
-  res.render('index', { title : 'VITdost' });
+  res.render('index', { title : 'CodeConnect' });
 });
 
 router.get('/error', async (req, res) => {

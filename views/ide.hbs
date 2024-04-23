@@ -1,3 +1,11 @@
+<style>
+    body{
+        background-color: black;
+        color:goldenrod
+    }
+</style>
+
+
 <br>
 <br>
 {{#if user}}
@@ -13,8 +21,23 @@
             Workspace</b></button>
     </div>
 </form>
-
 {{/if}}
+<br>
+<br>
+{{#if user}}
+<form action="/ide/deleteTask" method="POST">
+    <div class="form-group">
+        <input name="workspace" type="text" required class="form-control" placeholder="Room Name"
+            style="float: right; width: 18%; margin-right: 15px; font-size:20px">
+    </div>
+    <br>
+    <br>
+    <div style="float:right;">
+        <button type="submit" class="btn btn-warning" style="margin-right: 15px; font-size:20px"><b>Delete Existing
+            Workspace</b></button>
+    </div>
+{{/if}}
+
 <br>
 <br>
 <br>
@@ -28,7 +51,7 @@
         {{#each rooms}}
         <div style="text-align:center;">
             <a href="/ide/code/{{this._id}}"><img src="/images/workspace.png" alt="workspace" style="width: 100px;"></a>
-            <p style="color: black; font-weight:bolder; font-size:larger; text-align:center">{{this.name}}</p>
+            <p style="color: antiquewhite; font-weight:bolder; font-size:larger; text-align:center">{{this.name}}</p>
         </div>
         {{/each}}
         {{else}}
@@ -40,7 +63,7 @@
 <br>
 
 <br>
-<div class="container">
+{{!-- <div class="container">
     <h1>&nbsp;Collaborations</h1>
     <div style="display:flex; gap:15px;">
         {{#if collabroom}}
@@ -55,4 +78,4 @@
         <h2><b style="color: lightgray;">&nbsp;No collaborations yet.</b></h2>
         {{/if}}
     </div>
-</div>
+</div> --}}

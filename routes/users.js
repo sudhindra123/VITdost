@@ -4,7 +4,7 @@ var passport = require('passport');
 
 router.route('/login')
   .get(async (req, res) => {
-    res.render('login', { title: 'VITdost - Login' });
+    res.render('login', { title: 'Login' });
   })
   .post(passport.authenticate('local', {
     failureRedirect: '/users/login'
@@ -14,7 +14,7 @@ router.route('/login')
 
 router.route('/register')
   .get(async (req, res) => {
-    res.render('signup', { title: 'VITdost - Register' });
+    res.render('signup', { title: 'Register' });
   })
   .post(async (req, res) => {
       var newUser = new User({
