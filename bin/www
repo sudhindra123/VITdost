@@ -34,11 +34,6 @@ server.on('listening', onListening);
  * Normalize a port into a number, string, or false.
  */
 
-import io from 'socket.io-client';
- const socket = io("//url",{
-         transports: ['websocket'],
-        });
-
 
 
 function normalizePort(val) {
